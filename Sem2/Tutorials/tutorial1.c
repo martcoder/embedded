@@ -1,9 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-struct Stats{ float minimum; float maximum; float rangeimum; };
+float mymedian(float * floatArr, int size){
+  if( (size % 2) == 0){ // if even number of elements
+    return (floatArr[((size/2)-1)] + floatArr[(size/2)] ) / 2.0; // return avg of two middle elements
+  }
+  else{
+    return  floatArr[size/2]; // C rounds down for integer division so this will choose the middle element. 
+  }
+}
 
-struct Stats mystats(float * elementsArr){
-  int size = sizeof(elementsArr) / sizeof(elementsArr[0]);
+struct Stats{ float minimum; float maximum; float rangeimum; float median; };
+
+struct Stats mystats(float * elementsArr, int size){
   float min, max, range;
   // Initialise min to an actual element in the array because otherwise it will
   // ...be initialised to 0 which may be smaller than any element
@@ -52,17 +61,59 @@ float* mysort(float* farray, int L){
 }
 
 int main(){
-  float fa[5] = {0.7,0.2,0.9,1.2,0.4};
-  struct Stats stats = mystats(fa);
-  printf("\nThe array consists of:  %f %f %f %f %f \n\n",fa[0],fa[1],fa[2],fa[3],fa[4]);
-  printf("======\nArray stats: \n - minimum value of %f \n - maximum value of %f \n - range of %f\n======\n",stats.minimum,stats.maximum,stats.rangeimum);
-  mysort(fa,5);
-  printf("\nThe array has been sorted in descending order: %f %f %f %f %f\n",fa[0],fa[1],fa[2],fa[3],fa[4]);
+  printf("To use default array of floats, press d then Enter. To input your own values, press v then Enter : ");
+  char c;
+  scanf("%c", &c);
+  float * fa;
+  int size = 0;
+  if( c == 'd'){
+    fa = malloc(sizeof(float) * 5);
+    fa[0] = 0.7; fa[1] = 0.2; fa[2] = 0.9; fa[3] = 1.2; fa[4] = 0.4;
+    size = 5;
+    printf("\nThe array consists of:  %f %f %f %f %f \n\n",fa[0],fa[1],fa[2],fa[3],fa[4]);
+  }
+  else{
+    // Read in up to 10 float values
+    float floatarr[10];
+    int counter = 0;
+    printf("Enter 10 or less separate float values, to populate an array...\nto finish populating write -1 and Enter\n");
+    float toread = 1.0;
+    while( (toread != -1.0) && (counter < 10) ){
+      printf("Write the next float value for the array, then press Enter : ");
+      scanf("%f",&toread);
+      floatarr[counter] = toread;
+      counter++;
+    }
+    counter--; // to omit the -1 that got stored...
+    fa =  malloc(sizeof(float) * counter);
+    size = counter;
+    int inc= 0;
+    // now populate a float array from the entered values...
+    printf("\n\n The array consists of:\n");
+    for(inc = 0; inc < counter; inc++){
+      fa[inc] = floatarr[inc];
+      printf("%f ",fa[inc]);
+    }
+  }
+  //int size = sizeof(fa) / sizeof(fa[0]);
+  printf("\nThe size of array is %d\n",size);
+  struct Stats stats = mystats(fa,size);
+  stats.median = mymedian(fa,size);
+  printf("======\nArray stats: \n - minimum value of %f \n - maximum value of %f \n - range of %f\n \n======\n",stats.minimum,stats.maximum,stats.rangeimum);
+  mysort(fa,size);
+  stats.median = mymedian(fa,size);
+  printf("\nThe array has been sorted in descending order:");
+  int raise = 0;
+  for(raise = 0; raise < size; raise++){
+    printf(" %f ",fa[raise]); 
+  }
+  printf("\n.... and the median is %f\n",stats.median);
 
   int buffer[5] = {0,0,0,0,0};
   int bufferLength = sizeof(buffer) / sizeof(buffer[0]);
   int newData = 1;
   int location = bufferLength - 1; // starting location inthe circular buffer
+  printf("\n---------\nFollowing this a reverse circular buffer will be experimented with\n");
   printf("\n----------\n\nTo exit, write 0 and press Enter...\n");
 
   while(newData != 0){
