@@ -1,0 +1,153 @@
+******************************************************************************
+               TMS320C6x Linker PC v7.4.16                     
+******************************************************************************
+>> Linked Thu Jan 19 15:38:25 2023
+
+OUTPUT FILE NAME:   <firstTeamProject.out>
+ENTRY POINT SYMBOL: "_c_int00"  address: 118103a0
+
+
+MEMORY CONFIGURATION
+
+         name            origin    length      used     unused   attr    fill
+----------------------  --------  ---------  --------  --------  ----  --------
+  IRAM                  11800000   00040000  00010678  0002f988  RWIX
+  L3_shared_RAM         80000000   00020000  00000000  00020000  RWIX
+  DDR2_data             c0000000   08000000  00000000  08000000  RWIX
+
+
+SECTION ALLOCATION MAP
+
+ output                                  attributes/
+section   page    origin      length       input sections
+--------  ----  ----------  ----------   ----------------
+.data      0    11800000    00000000     UNINITIALIZED
+
+.stack     0    11800000    00010000     UNINITIALIZED
+                  11800000    00000008     rts6740.lib : boot.obj (.stack)
+                  11800008    0000fff8     --HOLE--
+
+.text      0    11810000    00000500     
+                  11810000    000000e0     block_sine.obj (.text)
+                  118100e0    000000c0     rts6740.lib : autoinit.obj (.text:__auto_init)
+                  118101a0    000000c0                 : exit.obj (.text:_exit)
+                  11810260    000000a0                 : cpy_tbl.obj (.text:_copy_in)
+                  11810300    000000a0                 : memcpy64.obj (.text:_memcpy)
+                  118103a0    00000080                 : boot.obj (.text:_c_int00)
+                  11810420    00000060                 : cpp_init.obj (.text:___TI_cpp_init)
+                  11810480    00000040                 : args_main.obj (.text:__args_main)
+                  118104c0    00000020     CCS6_Intro_main.obj (.text)
+                  118104e0    00000020     rts6740.lib : exit.obj (.text:_abort)
+
+.far       0    11810500    00000118     UNINITIALIZED
+                  11810500    00000100     CCS6_Intro_main.obj (.far)
+                  11810600    0000000c     block_sine.obj (.far)
+                  1181060c    0000000c     rts6740.lib : exit.obj (.far)
+
+.cinit     0    11810618    0000005c     
+                  11810618    0000002c     rts6740.lib : exit.obj (.cinit)
+                  11810644    00000004     --HOLE-- [fill = 0]
+                  11810648    00000024     block_sine.obj (.cinit)
+                  1181066c    00000004     --HOLE-- [fill = 0]
+                  11810670    00000004     (.pad.cinit) [fill = 0]
+
+.bss       0    11810674    00000004     UNINITIALIZED
+                  11810674    00000004     block_sine.obj (.bss)
+
+
+GLOBAL SYMBOLS: SORTED ALPHABETICALLY BY Name 
+
+address    name
+--------   ----
+11810674   $bss
+11810674   .bss
+11800000   .data
+11810000   .text
+118104e0   C$$EXIT
+11810000   __STACK_END
+00010000   __STACK_SIZE
+00000001   __TI_args_main
+11810420   ___TI_cpp_init
+11810614   ___TI_enable_exit_profile_output
+ffffffff   ___TI_pprof_out_hndl
+ffffffff   ___TI_prof_data_size
+ffffffff   ___TI_prof_data_start
+ffffffff   ___binit__
+11810674   ___bss__
+ffffffff   ___c_args__
+11810618   ___cinit__
+11800000   ___data__
+11800000   ___edata__
+11810678   ___end__
+11810500   ___etext__
+ffffffff   ___pinit__
+11810000   ___text__
+11810480   __args_main
+118100e0   __auto_init
+1181060c   __cleanup_ptr
+11810610   __dtors_ptr
+11800000   __stack
+118104e0   _abort
+11810090   _blockSine
+118103a0   _c_int00
+11810260   _copy_in
+118101a0   _exit
+118104c0   _main
+11810300   _memcpy
+11810000   _sineGen
+ffffffff   binit
+11810618   cinit
+11800000   edata
+11810678   end
+11810500   etext
+ffffffff   pinit
+
+
+GLOBAL SYMBOLS: SORTED BY Symbol Address 
+
+address    name
+--------   ----
+00000001   __TI_args_main
+00010000   __STACK_SIZE
+11800000   .data
+11800000   ___data__
+11800000   ___edata__
+11800000   __stack
+11800000   edata
+11810000   .text
+11810000   __STACK_END
+11810000   ___text__
+11810000   _sineGen
+11810090   _blockSine
+118100e0   __auto_init
+118101a0   _exit
+11810260   _copy_in
+11810300   _memcpy
+118103a0   _c_int00
+11810420   ___TI_cpp_init
+11810480   __args_main
+118104c0   _main
+118104e0   C$$EXIT
+118104e0   _abort
+11810500   ___etext__
+11810500   etext
+1181060c   __cleanup_ptr
+11810610   __dtors_ptr
+11810614   ___TI_enable_exit_profile_output
+11810618   ___cinit__
+11810618   cinit
+11810674   $bss
+11810674   .bss
+11810674   ___bss__
+11810678   ___end__
+11810678   end
+ffffffff   ___TI_pprof_out_hndl
+ffffffff   ___TI_prof_data_size
+ffffffff   ___TI_prof_data_start
+ffffffff   ___binit__
+ffffffff   ___c_args__
+ffffffff   ___pinit__
+ffffffff   binit
+ffffffff   pinit
+
+[42 symbols]

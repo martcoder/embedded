@@ -1,0 +1,1 @@
+"./CCS6_Intro_main.obj" "./block_sine.obj" "../linker.cmd" -llibc.a 
