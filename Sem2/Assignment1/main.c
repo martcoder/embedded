@@ -11,16 +11,72 @@
 float * filteredSignal1;
 float * filteredSignal2;
 
-float doFIR(float * weights, float * inputSignal, float * outputSignal){
+float doFIR(float * weights, float * inputSignal, float * outputSignal, int siglength, int weightslength){
     int f = 0;
     int s = 0;
-    for(f = 0; f < signalLength; f++){ // for every y value output
-        for(s = 0; s < signalLength; s++){ // Accumulate the product of inputSignal element and corresponding weight element
-            //printf("weight value is %f and sig val is %f",weights[s],inputSignal[s]);
-            int delay;
-            //scanf("%d",&delay);
-            outputSignal[f] += weights[s] * inputSignal[s]; // Here the product and accumulate happens
+    // Weights will remain 'stationary' and the signal will 'flow' through from right to left
+    // (think convolution but backwards direction from how you normally slide across)
+    // the following float pointers will be for representing which parts in the signal are 
+    // below the end points of the weights
+    //sigcircular is for which item in the sig is 
+    float * left; float * right; float * wcircular; float * sigcircular;
+    float * startcase; float * endcase;
+    *left = -1.0; *right = -1.0; // minus denotes not started yet
+    int iterations = siglength + weightslength - 1; // convolution # of expected results
+    right = &inputSignal[0]; // special starting case, first sig element is at the rightmost weight
+    int i = 0;
+    sigcircular = right; // sigcircular for intial transient and marks 
+    int wIndex;
+    for(i = 0; i < iterations; i++){
+      outputSignal[i] = 0.0;
+      int conv = 0;
+      //starting logic
+      if(left == startcase){ // while signal still reaching other end of weights, multiply everything from signal[0] to right
+         wIndex = 0;
+         while(sigcircular != &inputSignal[0]){
+           outputSignal[i] += *sigcircular * weights[wIndex];
+           sigcircular--; // move left down the array toward the 0th element 
+           wIndex++; // move to next weight element, weights are symmetric so -- or ++ works
+         }
+         // Finally sigcircular reaches 0th element of signal
+         outputSignal[i] += *sigcircular * weights[wIndex]; 
+         // Now for next iteration move right ptr along one. 
+         right++;
+         if(wIndex > weightslength){
+           left = &inputSignal[0]; // leftmost weight has now got the sig element0 under it
+         }
+      }
+      else if (right == endcase){ // sig has moved beyond being beneath all weights
+        wIndex = 0; 
+        sigcircular = left; 
+        while(sigcircular != &inputSignal[siglength-1]){
+          outputSignal[i] += *sigcircular * weights[wIndex];
+          wIndex++;
+          sigcircular++;
         }
+        // Finally sigcircular reaches rightmost element of signal
+         outputSignal[i] += *sigcircular * weights[wIndex]; 
+         left++; 
+         right++;
+      }
+      else{
+        // main body
+        sigcircular = right;
+        if(right == &weights[weightslength-1]){//if we have reached the point where sig starts leaving the weights
+         right = endcase;// set the condition for the endgame. 
+        }
+        wIndex = 0; 
+        while(sigcircular != &inputSignal[0]){
+          outputSignal[i] += *sigcircular * weights[wIndex];
+          sigcircular--; // move to next sig element
+          wIndex++; // move to next weight element
+        }
+        // Finally sigcircular reaches 0th element of signal
+        outputSignal[i] += *sigcircular * weights[wIndex];
+        right++;
+        left++; // keep on moving which sig element has the leftmost weight above it
+        
+      }
     }
 }
 
@@ -83,14 +139,14 @@ int main(void) {
     printf("Our weight value is %f and sig1 val is %f ",b_fir1[0],signal1[0]);
 
     
-    /*
-    doFIR(b_fir1, signal1,filteredSignal1);
+    
+    doFIR(b_fir1, signal1,filteredSignal1,signalLength,N_FIR_B1);
     
     writeDataToFile("filtered1.data",filteredSignal1, signalLength);
     
-    doFIR(b_fir2, signal2,filteredSignal2);
+    doFIR(b_fir2, signal2,filteredSignal2,signalLength,N_FIR_B2);
     
     writeDataToFile("filtered2.data",filteredSignal2, signalLength);
-    */
+    
 	return 0;
 }
