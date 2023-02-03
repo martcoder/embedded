@@ -7,78 +7,61 @@
 #define signalLength 900
 #define idMultiplier 100
 #define idLength 9
+#define N_CHUNK 8
 
 float * filteredSignal1;
 float * filteredSignal2;
 
-float doFIR(float * weights, float * inputSignal, float * outputSignal, int siglength, int weightslength){
-    int f = 0;
-    int s = 0;
-    // Weights will remain 'stationary' and the signal will 'flow' through from right to left
-    // (think convolution but backwards direction from how you normally slide across)
-    // the following float pointers will be for representing which parts in the signal are 
-    // below the end points of the weights
-    //sigcircular is for which item in the sig is 
-    float * left; float * right; float * wcircular; float * sigcircular;
-    float * startcase; float * endcase;
-    *left = -1.0; *right = -1.0; // minus denotes not started yet
-    int iterations = siglength + weightslength - 1; // convolution # of expected results
-    right = &inputSignal[0]; // special starting case, first sig element is at the rightmost weight
-    int i = 0;
-    sigcircular = right; // sigcircular for intial transient and marks 
-    int wIndex;
-    for(i = 0; i < iterations; i++){
-      outputSignal[i] = 0.0;
-      int conv = 0;
-      //starting logic
-      if(left == startcase){ // while signal still reaching other end of weights, multiply everything from signal[0] to right
-         wIndex = 0;
-         while(sigcircular != &inputSignal[0]){
-           outputSignal[i] += *sigcircular * weights[wIndex];
-           sigcircular--; // move left down the array toward the 0th element 
-           wIndex++; // move to next weight element, weights are symmetric so -- or ++ works
-         }
-         // Finally sigcircular reaches 0th element of signal
-         outputSignal[i] += *sigcircular * weights[wIndex]; 
-         // Now for next iteration move right ptr along one. 
-         right++;
-         if(wIndex > weightslength){
-           left = &inputSignal[0]; // leftmost weight has now got the sig element0 under it
-         }
-      }
-      else if (right == endcase){ // sig has moved beyond being beneath all weights
-        wIndex = 0; 
-        sigcircular = left; 
-        while(sigcircular != &inputSignal[siglength-1]){
-          outputSignal[i] += *sigcircular * weights[wIndex];
-          wIndex++;
-          sigcircular++;
-        }
-        // Finally sigcircular reaches rightmost element of signal
-         outputSignal[i] += *sigcircular * weights[wIndex]; 
-         left++; 
-         right++;
-      }
-      else{
-        // main body
-        sigcircular = right;
-        if(right == &weights[weightslength-1]){//if we have reached the point where sig starts leaving the weights
-         right = endcase;// set the condition for the endgame. 
-        }
-        wIndex = 0; 
-        while(sigcircular != &inputSignal[0]){
-          outputSignal[i] += *sigcircular * weights[wIndex];
-          sigcircular--; // move to next sig element
-          wIndex++; // move to next weight element
-        }
-        // Finally sigcircular reaches 0th element of signal
-        outputSignal[i] += *sigcircular * weights[wIndex];
-        right++;
-        left++; // keep on moving which sig element has the leftmost weight above it
-        
-      }
+float doFIR(float * weights, float * inputSignal, float * outputSignal, int siglength, int weightslength, int chunkLength, int resultsLength){
+   // signal will be split into chunks
+  //weights will be swept across the signal chunk
+  // Signal will be chunked into length of 8, therefore convolution result = weightsLength+8 - 1;
+  // If signal chunk is less than 8, then just do that too. 
+  
+  //Results array
+  float * results;
+  results = (float*) malloc(sizeof(float) * resultsLength);
+  //initialise where in signal where are looking at
+  float * whereInChunk = inputSignal;
+  float * endOfChunk = inputSignal + chunkLength;
+  float * whereInWeights = weights;
+  float * weightEnd = weights + weightslength;
+  int iter = 0;
+  int shift = 1;
+  int dotprodlength = 0;
+  //weightslength + chunkLength - 1 = number of convolution results we need
+  for(shift = 1; shift < (weightslength + chunkLength); shift++){
+    results[shift] = 0.0f;
+    
+    // following if statement adjusts how long the dot product is at start and end of convolution
+    if(shift < chunkLength){ //at start of convolution
+      dotprodlength = shift;
     }
+    else if ( (weightslength - shift) < chunkLength){//at end of convolution
+      dotprodlength = weightslength - shift;
+      whereInChunk = inputSignal + chunkLength - (weightslength - shift);
+    }
+    else{
+      dotprodlength = chunkLength;
+    }
+    for(iter = 0; iter < dotprodlength; iter++){
+      results[shift] += (*whereInWeights) * (*whereInChunk);
+      whereInWeights--; // move to next weight
+      whereInChunk++; // move to next element in signal chunk
+      // need to break out of chunkLength if we are at the beginning or end of the convolution
+      
+    }
+    // reset pointers and move to next shift position
+    whereInChunk = inputSignal;
+    whereInWeights = weights + shift;
+  }
+  int c = 0; 
+  printf("\nThe %d-long results of convolution of filter with weights %d is:\n",weightslength + chunkLength - 1,weightslength);
+  for(c = 0; c < weightslength + chunkLength - 1; c++){
+    printf("\nresult[%d] = %f\n",c,results[c]);
+  }
 }
+
 
 void writeDataToFile(char * filename, float * data, int lengthOfArray){
     FILE * fptr;
@@ -138,15 +121,15 @@ int main(void) {
     int delay = 0;
     printf("Our weight value is %f and sig1 val is %f ",b_fir1[0],signal1[0]);
 
+
     
+    doFIR(b_fir1, signal1,filteredSignal1,signalLength,N_FIR_B1,N_CHUNK,N_FIR_B1 + N_CHUNK - 1);
     
-    doFIR(b_fir1, signal1,filteredSignal1,signalLength,N_FIR_B1);
+    //writeDataToFile("filtered1.data",filteredSignal1, signalLength);
     
-    writeDataToFile("filtered1.data",filteredSignal1, signalLength);
+    //doFIR(b_fir2, signal2,filteredSignal2,signalLength,N_FIR_B2,N_CHUNK, N_FIR_B2 + N_CHUNK - 1);
     
-    doFIR(b_fir2, signal2,filteredSignal2,signalLength,N_FIR_B2);
-    
-    writeDataToFile("filtered2.data",filteredSignal2, signalLength);
+    //writeDataToFile("filtered2.data",filteredSignal2, signalLength);
     
 	return 0;
 }

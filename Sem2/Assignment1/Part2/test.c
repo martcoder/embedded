@@ -9,6 +9,6 @@ int main(){
  u[1] = 4;
  u[2] = 6;
 
- printf("first val is %f",u[0]);
+ printf("first val is %f and 2nd value is %f",u[0],*(u+1));
 
 }
