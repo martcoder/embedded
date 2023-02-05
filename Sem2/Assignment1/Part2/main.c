@@ -25,7 +25,7 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
   float * whereInChunk = inputSignal;
   float * endOfChunk = inputSignal + chunkLength;
   float * whereInWeights = weights;
-  float * weightEnd = weights + weightslength;
+  float * weightEnd = weights + weightslength - 1;
   int iter = 0;
   int shift = 1;
   int dotprodlength = 0;
@@ -37,15 +37,20 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
     if(shift < chunkLength){ //at start of convolution
       dotprodlength = shift;
     }
-    else if ( (weightslength - shift) < chunkLength){//at end of convolution
-      dotprodlength = weightslength - shift;
-      whereInChunk = inputSignal + chunkLength - (weightslength - shift);
+    else if ( shift > weightslength){//at end of convolution
+      dotprodlength = chunkLength - (shift - weightslength);
+      whereInChunk = inputSignal + (shift - weightslength);
+      whereInWeights  = weightEnd;
     }
     else{
       dotprodlength = chunkLength;
     }
+
+    printf("\nStarting a new convo result MAC\n");
     for(iter = 0; iter < dotprodlength; iter++){
-      results[shift] += (*whereInWeights) * (*whereInChunk);
+      printf("...\nweight is %f and sig is %f and \n",*whereInWeights,*whereInChunk);
+      results[shift-1] += (*whereInWeights) * (*whereInChunk);
+      printf("intermediate convolution result value is %f\n",results[shift-1]);
       whereInWeights--; // move to next weight
       whereInChunk++; // move to next element in signal chunk
       // need to break out of chunkLength if we are at the beginning or end of the convolution
@@ -93,33 +98,57 @@ int main(void) {
     // Construct full 900 length signal1 and signal2
     int c = 0;
     int nine = 0;
-    printf("before signal construction");
+    printf("\nbefore signal construction\n");
     int i = 0;
     while(c < idMultiplier){ //100 times
         for(nine = 0; nine < idLength; nine++){
            signal1[i+nine] = student1[nine];
-           fprintf(fp1,"%f\n",signal1[i+nine]); //print signal1 value to file
+           //fprintf(fp1,"%f\n",signal1[i+nine]); //print signal1 value to file
            signal2[i+nine] = student2[nine]; 
-           fprintf(fp2,"%f\n",signal2[i+nine]); //print signal2 value to file
+           //fprintf(fp2,"%f\n",signal2[i+nine]); //print signal2 value to file
         }
         c++;
         i = i + 9;
     }
     
-    printf("after signal construction");
+    printf("\nafter signal construction\n");
 
+    //=================CALCULATE AVG, THEN SUBTRACT AVG LEAVING MEAN-ZERO SIGNALS====
+    float average1 = 0.0;
+    float average2 = 0.0;
+    int n900 = 900;
+    for(n900 = 0; n900 < 900; n900++){
+      average1 = average1 + signal1[n900];
+      average2 = average2 + signal2[n900];
+    }
+
+    average1 = average1 / 900.0f;
+    average2 = average2 / 900.0f;
+
+    //========Create zero-mean signals and also print to file. 
+    for(n900 = 0; n900 < 900; n900++){ 
+      signal1[n900] -= average1;
+      fprintf(fp1,"%f\n",signal1[n900]); //print signal1 value to file
+      signal2[n900] -= average2;
+      fprintf(fp2,"%f\n",signal2[n900]); //print signal2 value to file
+    }
+
+    // Close file handles. 
     fclose(fp1);
     fclose(fp2);
+
+    printf("\nThe mean valueS for signal1 and signal2 are %f and %f\n",average1,average2);
+
     i = 0;
     for(i = 0; i < 10; i++){
-      printf("sig1 and sig2 first 10 vals %f %f",signal1[i],signal2[i]);
+      printf("\nsig1 and sig2 first 10 vals %f %f\n",signal1[i],signal2[i]);
     }
     //
     filteredSignal1 = (float*) malloc(sizeof(float) * signalLength);
     filteredSignal2 = (float*) malloc(sizeof(float) * signalLength);
     
     int delay = 0;
-    printf("Our weight value is %f and sig1 val is %f ",b_fir1[0],signal1[0]);
+    printf("\nOur weight value is %f and sig1 val is %f \n",b_fir1[0],signal1[0]);
 
 
     
