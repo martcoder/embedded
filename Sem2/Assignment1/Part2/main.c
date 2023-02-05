@@ -18,28 +18,43 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
   // Signal will be chunked into length of 8, therefore convolution result = weightsLength+8 - 1;
   // If signal chunk is less than 8, then just do that too. 
   
-  //Results array
+/* int numLoops = 2; // rounds this up
+ int whileCounter = 0;
+ while(whileCounter < numLoops){
+ */ //Results array
   //float * results;
   //results = (float*) malloc(sizeof(float) * resultsLength);
   //initialise where in signal where are looking at
+  float * ptrToResult = outputSignal;
+  float * ptrToInputSig = inputSignal;
   float * whereInChunk = inputSignal;
   float * endOfChunk = inputSignal + chunkLength;
   float * whereInWeights = weights;
   float * weightEnd = weights + weightslength - 1;
+
+ int numLoops = ceil(siglength / chunkLength); // rounds this up
+#ifdef TEST
+ printf("num while loops is %d\n",numLoops);
+#endif
+ int whileCounter = 0;
+ while(whileCounter < numLoops){
+
   int iter = 0;
   int shift = 1;
   int dotprodlength = 0;
   //weightslength + chunkLength - 1 = number of convolution results we need
   for(shift = 1; shift < (weightslength + chunkLength); shift++){
-    outputSignal[shift-1] = 0.0f;
-    
+    //initialilse result value to 0.0 
+    /*if(whileCounter == 0){
+      ptrToResult[shift-1] = 0.0f;
+    }*/
     // following if statement adjusts how long the dot product is at start and end of convolution
     if(shift < chunkLength){ //at start of convolution
       dotprodlength = shift;
     }
     else if ( shift > weightslength){//at end of convolution
       dotprodlength = chunkLength - (shift - weightslength); // will want to iterate few times
-      whereInChunk = inputSignal + (shift - weightslength); // set signal starting point
+      whereInChunk = ptrToInputSig + (shift - weightslength); // set signal starting point
       whereInWeights  = weightEnd; // we are at the end of our convolution so always counting bakcware from weights end 
     }
     else{
@@ -52,9 +67,9 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
 #ifdef TEST
       printf("...\nweight is %f and sig is %f and \n",*whereInWeights,*whereInChunk);
 #endif
-      outputSignal[shift-1] += (float) (*whereInWeights) * (*whereInChunk);
+      ptrToResult[shift-1] += (float) (*whereInWeights) * (*whereInChunk);
 #ifdef TEST
-      printf("intermediate convolution result value is %f\n",outputSignal[shift-1]);
+      printf("intermediate convolution result value is %f\n",ptrToResult[shift-1]);
 #endif
       whereInWeights--; // move to preceding weight
       whereInChunk++; // move to subsequent element in signal chunk
@@ -62,17 +77,24 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
       
     }
     // reset pointers and move to next shift position
-    whereInChunk = inputSignal;
+    whereInChunk = ptrToInputSig;
     whereInWeights = weights + shift;
   }
 #ifdef TEST
   int c = 0; 
   printf("\nThe %d-long results of convolution of filter with weights %d is:\n",weightslength + chunkLength - 1,weightslength);
-  for(c = 0; c < weightslength + chunkLength - 1; c++){
-    printf("\nresult[%d] = %f\n",c,outputSignal[c]);
+  for(c = 0; c < weightslength + (chunkLength*2) - 1; c++){
+    printf("\nresult[%d] = %f\n",c,inputSignal[c]);
   }
 #endif
 
+  whileCounter++;
+  ptrToInputSig = ptrToInputSig + chunkLength; // move to next Overlap-Add section in signal...
+  // Move to the section of the results that you want to start overlapping convo results onto
+  ptrToResult = ptrToResult + chunkLength;
+
+  whereInWeights = weights;
+ }//end of while
   //outputSignal = results; //Finally set the outputSignal ptr to the results ptr for access outside of this function
 }
 
@@ -103,8 +125,26 @@ int main(void) {
     float * signal2;
     signal1 = (float*) malloc( sizeof(float) * signalLength );
     signal2 = (float*) malloc( sizeof(float) * signalLength );
+    float test1[4] = { 1, 4, 6, 3};
+    float test2[4] = { 3, 2, 7, 4};
+    
+
+    int choice = -1; 
+    printf("\n\n==============\nMake a choice then press Enter. If you would like to use the coursework signals press 0, for test signals press 1: \n");
+    scanf("%d",&choice);
+    if(choice == 0){ printf("\nOkay, you selected the coursework signals, doing FIR filtering of them now\n");}
+    else if(choice == 1){ printf("\nOkay, you selected the test signals, doing FIR filtering of them now\n");}
+    else{
+      choice = 0; //default of coursework signals
+      printf("\n... thanks for participating, using the default coursework signals then... \n");
+    }
 
     
+    int chunksize = 4;
+    printf("\n\n======Okay now define chunk size, e.g. how big a chunk of the signal gets processed each time using overlap add\n");
+    printf("=== Enter an integer value between 2 and inifinity....\n");
+    scanf("%d",&chunksize);
+
     FILE * fp1; // file pointer
     FILE * fp2; // file pointer
     fp1 = fopen("signal1.data","w"); //open file to write to
@@ -162,24 +202,43 @@ int main(void) {
     }
 #endif
     //
-    float * filteredSignal1 = (float*) malloc( sizeof(float) * (N_CHUNK + N_FIR_B1 - 1) );
-    float * filteredSignal2 = (float*) malloc( sizeof(float) * (N_CHUNK + N_FIR_B2 - 1) );
-    
+    float * filteredSignal1 = (float*) malloc( sizeof(float) * (signalLength + N_FIR_B1 - 1) );
+    float * filteredSignal2 = (float*) malloc( sizeof(float) * (signalLength + N_FIR_B2 - 1) );
+    float * filteredTestSignal1 = (float*) malloc( sizeof(float) * (4 + N_FIR_B1 - 1) );
+     float * filteredTestSignal2 = (float*) malloc( sizeof(float) * (4 + N_FIR_B2 - 1) );    
+
+
+    // Initialise final values to zero
+    int init = 0;
+    for(init = 0; init < (signalLength + N_FIR_B1 - 1); init++){
+      filteredSignal1[init] = 0.0f;
+      filteredSignal2[init] = 0.0f;
+    }
 #ifdef TEST
     printf("\nOur weight value is %f and sig1 val is %f \n",b_fir1[0],signal1[0]);
 #endif
 
-    
-    doFIR(b_fir1, signal1, filteredSignal1, signalLength,N_FIR_B1,N_CHUNK,N_FIR_B1 + N_CHUNK - 1);
+    if(choice == 1){ // test signals
+      doFIR(b_fir1, test1/*signal*/, filteredTestSignal1, 4/*signalLength*/,N_FIR_B1,chunksize/*N_CHUNK*/,N_FIR_B1 + N_CHUNK - 1);
+      writeDataToFile("testfiltered1.data",filteredTestSignal1, 4/*signalLength*/ + N_FIR_B1 - 1); // write convolution results
 
-#ifdef TEST
-    printf("\nJust did a FIR filtering\n");
-#endif    
-    writeDataToFile("filtered1.data",filteredSignal1, N_CHUNK + N_FIR_B1 - 1); // write convolution results
-    
-    doFIR(b_fir2, signal2,filteredSignal2,signalLength,N_FIR_B2,N_CHUNK, N_FIR_B2 + N_CHUNK - 1);
-    
-    writeDataToFile("filtered2.data",filteredSignal2, N_CHUNK + N_FIR_B2 - 1);
+      doFIR(b_fir2, test2/*signal*/, filteredTestSignal2, 4/*signalLength*/,N_FIR_B2,chunksize/*N_CHUNK*/,N_FIR_B2 + N_CHUNK - 1);
+      writeDataToFile("testfiltered2.data",filteredTestSignal2, 4/*signalLength*/ + N_FIR_B2 - 1); // write convolution results
+
+      printf("Please find the filtered results in testfilteredx.data\n");
+    }
+    else{
+      // FIR filter signal1
+      doFIR(b_fir1, signal1, filteredSignal1, signalLength,N_FIR_B1,N_CHUNK,N_FIR_B1 + chunksize/*N_CHUNK*/ - 1);
+      writeDataToFile("filtered1.data",filteredSignal1, signalLength + N_FIR_B1 - 1); // write convolution results
+
+      doFIR(b_fir2, signal2,filteredSignal2,signalLength,N_FIR_B2,N_CHUNK, N_FIR_B2 + chunksize/*N_CHUNK*/ - 1);
+ 
+      writeDataToFile("filtered2.data",filteredSignal2, signalLength + N_FIR_B2 - 1);
+  
+      printf("Please find the filtered results in filteredx.data\n");
+    }
+
     
 	return 0;
 }
