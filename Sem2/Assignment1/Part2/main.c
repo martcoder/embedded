@@ -130,7 +130,10 @@ int main(void) {
     
 
     int choice = -1; 
-    printf("\n\n==============\nMake a choice then press Enter. If you would like to use the coursework signals press 0, for test signals press 1: \n");
+    printf("\n\n==============\nMake a choice then press Enter.....\n");
+    printf(" If you would like to use the coursework signals press 0\n");
+    printf(" or if you would like to use the test signals press 1 \n");
+    printf(" Enter your choice here: ");
     scanf("%d",&choice);
     if(choice == 0){ printf("\nOkay, you selected the coursework signals, doing FIR filtering of them now\n");}
     else if(choice == 1){ printf("\nOkay, you selected the test signals, doing FIR filtering of them now\n");}
@@ -142,8 +145,13 @@ int main(void) {
     
     int chunksize = 4;
     printf("\n\n======Okay now define chunk size, e.g. how big a chunk of the signal gets processed each time using overlap add\n");
-    printf("=== Enter an integer value between 2 and inifinity....\n");
+    printf("--------- Enter an integer value between 2 and inifinity.... : ");
     scanf("%d",&chunksize);
+    if(chunksize < 2){
+      chunksize = 4; 
+      printf("\n... so I'll just use the default chunksize of 4 then....\n");
+    }
+    printf("You chose chunksize of %d\n",chunksize);
 
     FILE * fp1; // file pointer
     FILE * fp2; // file pointer
@@ -160,9 +168,7 @@ int main(void) {
     while(c < idMultiplier){ //100 times
         for(nine = 0; nine < idLength; nine++){
            signal1[i+nine] = student1[nine];
-           //fprintf(fp1,"%f\n",signal1[i+nine]); //print signal1 value to file
            signal2[i+nine] = student2[nine]; 
-           //fprintf(fp2,"%f\n",signal2[i+nine]); //print signal2 value to file
         }
         c++;
         i = i + 9;
@@ -190,6 +196,15 @@ int main(void) {
       fprintf(fp2,"%f\n",signal2[n900]); //print signal2 value to file
     }
 
+   if(choice == 1){    
+     printf("The two test signals are: \n");
+     printf("Test signal 1: [%f %f %f %f]\n",test1[0],test1[1],test1[2],test1[3]);
+     printf("Test signal 2: [%f %f %f %f]\n",test2[0],test2[1],test2[2],test2[3]);
+   }
+   else{
+     printf("The two test signals have been written to two data files containing their values\n");
+
+   }
     // Close file handles. 
     fclose(fp1);
     fclose(fp2);
