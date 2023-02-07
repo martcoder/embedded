@@ -14,17 +14,9 @@
 
 float doFIR(float * weights, float * inputSignal, float * outputSignal, int siglength, int weightslength, int chunkLength, int resultsLength){
    // signal will be split into chunks
-  //weights will be swept across the signal chunk
-  // Signal will be chunked into length of 8, therefore convolution result = weightsLength+8 - 1;
-  // If signal chunk is less than 8, then just do that too. 
-  
-/* int numLoops = 2; // rounds this up
- int whileCounter = 0;
- while(whileCounter < numLoops){
- */ //Results array
-  //float * results;
-  //results = (float*) malloc(sizeof(float) * resultsLength);
-  //initialise where in signal where are looking at
+  //signal chunk will be swept across the weights
+
+  //declare and initialise useful pointers
   float * ptrToResult = outputSignal;
   float * ptrToInputSig = inputSignal;
   float * whereInChunk = inputSignal;
@@ -37,6 +29,7 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
  printf("num while loops is %d\n",numLoops);
 #endif
  int whileCounter = 0;
+ //overall loop to consider each chunk
  while(whileCounter < numLoops){
 
   int iter = 0;
@@ -44,11 +37,7 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
   int dotprodlength = 0;
   //weightslength + chunkLength - 1 = number of convolution results we need
   for(shift = 1; shift < (weightslength + chunkLength); shift++){
-    //initialilse result value to 0.0 
-    /*if(whileCounter == 0){
-      ptrToResult[shift-1] = 0.0f;
-    }*/
-    // following if statement adjusts how long the dot product is at start and end of convolution
+    // following if statement adjusts how long the dot product is at start of convolution
     if(shift < chunkLength){ //at start of convolution
       dotprodlength = shift;
     }
@@ -58,11 +47,12 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
       whereInWeights  = weightEnd; // we are at the end of our convolution so always counting bakcware from weights end 
     }
     else{
-      dotprodlength = chunkLength;
+      dotprodlength = chunkLength; // while chunk is somewhere under the weights
     }
 #ifdef TEST
     printf("\nStarting a new convo result MAC\n");
 #endif
+    // for loop for doing current dotproduct in current shift position
     for(iter = 0; iter < dotprodlength; iter++){
 #ifdef TEST
       printf("...\nweight is %f and sig is %f and \n",*whereInWeights,*whereInChunk);
@@ -73,8 +63,7 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
 #endif
       whereInWeights--; // move to preceding weight
       whereInChunk++; // move to subsequent element in signal chunk
-      // need to break out of chunkLength if we are at the beginning or end of the convolution
-      
+
     }
     // reset pointers and move to next shift position
     whereInChunk = ptrToInputSig;
@@ -88,14 +77,13 @@ float doFIR(float * weights, float * inputSignal, float * outputSignal, int sigl
   }
 #endif
 
-  whileCounter++;
+  whileCounter++; // move onto next chunk
   ptrToInputSig = ptrToInputSig + chunkLength; // move to next Overlap-Add section in signal...
   // Move to the section of the results that you want to start overlapping convo results onto
   ptrToResult = ptrToResult + chunkLength;
 
-  whereInWeights = weights;
+  whereInWeights = weights; // reset to start of weights
  }//end of while
-  //outputSignal = results; //Finally set the outputSignal ptr to the results ptr for access outside of this function
 }
 
 
@@ -247,6 +235,7 @@ int main(void) {
       doFIR(b_fir1, signal1, filteredSignal1, signalLength,N_FIR_B1,N_CHUNK,N_FIR_B1 + chunksize/*N_CHUNK*/ - 1);
       writeDataToFile("filtered1.data",filteredSignal1, signalLength + N_FIR_B1 - 1); // write convolution results
 
+      // FIR filter signal2
       doFIR(b_fir2, signal2,filteredSignal2,signalLength,N_FIR_B2,N_CHUNK, N_FIR_B2 + chunksize/*N_CHUNK*/ - 1);
  
       writeDataToFile("filtered2.data",filteredSignal2, signalLength + N_FIR_B2 - 1);
