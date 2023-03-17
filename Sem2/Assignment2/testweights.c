@@ -8,9 +8,7 @@ float lp_numerator[17] = { 0.0f, 0.0f, 0.0001f, 0.0003f, 0.0009f, 0.0022f, 0.004
 float bp_denominator[17] = {1.0f, -0.0005f, 2.6528f, -0.0012f, 3.9151f, -0.0016f, 3.6092f, -0.0012f, 2.2599f, -0.0006f, 0.9571f, -0.0002f, 0.2664f, -0.0f, 0.044f, 0.0f, 0.0033f};
 float bp_numerator[17] = {0.0007f, 0.0f, -0.005f, 0.0f, 0.0199f, 0.0f, -0.0397f, 0.0f, 0.0496f, 0.0f, -0.0397f, 0.0f, 0.0199f, 0.0f, -0.0057f, 0.0f, 0.0007f};
 
-
-
-float yMinus[15]; //global
+float yMinus[16]; //global
 int yMinusOldest; // global pointer to oldest position in yMinus array
 float currentOutput;
 float * latestValueInSignal;
@@ -27,28 +25,38 @@ void writeDataToFile(char * filename, float * data, int lengthOfArray){
     fclose(fptr);
 }
 
-void doIIR(float * signalValuesLast16, float * currentOutput, int outputIndex, float * numerator, float * denominator){ //pass in last 16 values of signal
+void doIIR(float * signalValuesLast17, float * currentOutput, int outputIndex, float * numerator, float * denominator){ //pass in last 16 values of signal
 
  float result = 0.0f;
  int c = 0;
- for(c=0; c < 16; c++){ 
-   currentOutput[outputIndex] += lp_numerator[c] * signalValuesLast16[c]; 
+ for(c=0; c < 17; c++){ 
+   printf("Currentoutput is %f\n",currentOutput[outputIndex]);
+   printf("about to multiply %f with %f\n",numerator[c], signalValuesLast17[c+outputIndex]);
+   currentOutput[outputIndex] += numerator[c] * signalValuesLast17[c+outputIndex]; 
+ }
+ printf("Now about to start denominator\n"); 
+ for(c=1; c < 17; c++){
+   printf("Currentoutput is %f\n",currentOutput[outputIndex]);
+   printf("about to multiply %f with %f\n",denominator[c], yMinus[ (yMinusOldest + c-1) % 16 ]);
+
+   currentOutput[outputIndex] -= denominator[c] * yMinus[ (yMinusOldest + c-1) % 16 ]; // where yMinus[0] is y[n-1]
+   //yMinus[c-1] = 0.0f; // cheeky initialisation also using this loop
  }
  
- for(c=1; c < 16; c++){
-   currentOutput[outputIndex] += lp_denominator[c] * yMinus[ (yMinusOldest + c-1) % 15 ]; // where yMinus[0] is y[n-1]
-   yMinus[c-1] = 0.0f; // cheeky initialisation also using this loop
- }
- 
+ printf("Final output for this round is %f\n",currentOutput[outputIndex]);
  // CIRCULAR BUFFER HOLDING yMinus values
  // Now update the previous y values, overwriting the oldest with latest
-  // and update the index holding the oldest
-  yMinus[yMinusOldest] = currentOutput[outputIndex]; 
-  yMinusOldest++; 
-  if( yMinusOldest > 14 ){//yMinus holds 15 elements
+ // and update the index holding the oldest
+ yMinus[yMinusOldest] = currentOutput[outputIndex]; 
+ yMinusOldest++; 
+ if( yMinusOldest > 15 ){//yMinus holds 16 elements
     //reset 
     yMinusOldest = 0;
-  }
+ }
+ for(c =0; c < 16; c++){
+   printf("yMinus at index %d is %f\n",c,yMinus[c]);
+ }
+
 }
 
 int main(){
@@ -84,11 +92,16 @@ int main(){
    }
 
 
+  // initialise yMinus to zeros
+  for(c = 0; c < 16; c++){
+    yMinus[c] = 0.0f;
+  }
+
   //latestValueInSignal = &(sig[0]); 
   // let's do this!
   int ir = 0;
-  for(ir=0; ir< 900-16; ir++){ // call iir for each value of the signal!!! 
-    doIIR(constructedSignal,filteredOutput,ir, bp_numerator, bp_denominator);
+  for(ir=0; ir< 880; ir++){ // call iir for each value of the signal!!! 
+    doIIR(constructedSignal,filteredOutput,ir, lp_numerator, lp_denominator);
   }
   // Let's see if our signal has been low pass filtered!!! 
 
@@ -103,7 +116,6 @@ int main(){
 
  //ref https://stackoverflow.com/questions/308695/how-do-i-concatenate-const-literal-strings-in-c
   writeDataToFile(filename, filteredOutput, 900);
-
 
   return 0;
 }//end of main
