@@ -5,6 +5,10 @@
 //ref https://stackoverflow.com/questions/5141960/get-the-current-time-in-c
 float lp_denominator[17] = {1.0f, -5.3263f, 14.9989f, -28.3719f, 39.7005f, -43.0924f, 37.2584f, -26.0312f, 14.7901f, -6.8332f, 2.5516f, -0.7602f, 0.1768f, -0.0310f, 0.0039f, -0.0003f, 0.0f};
 float lp_numerator[17] = { 0.0f, 0.0f, 0.0001f, 0.0003f, 0.0009f, 0.0022f, 0.0041f, 0.0059f, 0.0066f, 0.0059f, 0.0041f, 0.0022f, 0.0009f, 0.0003f, 0.0001f, 0.0f, 0.0f  };
+float bp_denominator[17] = {1.0f, -0.0005f, 2.6528f, -0.0012f, 3.9151f, -0.0016f, 3.6092f, -0.0012f, 2.2599f, -0.0006f, 0.9571f, -0.0002f, 0.2664f, -0.0f, 0.044f, 0.0f, 0.0033f};
+float bp_numerator[17] = {0.0007f, 0.0f, -0.005f, 0.0f, 0.0199f, 0.0f, -0.0397f, 0.0f, 0.0496f, 0.0f, -0.0397f, 0.0f, 0.0199f, 0.0f, -0.0057f, 0.0f, 0.0007f};
+
+
 
 float yMinus[15]; //global
 int yMinusOldest; // global pointer to oldest position in yMinus array
@@ -23,7 +27,7 @@ void writeDataToFile(char * filename, float * data, int lengthOfArray){
     fclose(fptr);
 }
 
-void doIIR(float * signalValuesLast16, float * currentOutput, int outputIndex){ //pass in last 16 values of signal
+void doIIR(float * signalValuesLast16, float * currentOutput, int outputIndex, float * numerator, float * denominator){ //pass in last 16 values of signal
 
  float result = 0.0f;
  int c = 0;
@@ -84,7 +88,7 @@ int main(){
   // let's do this!
   int ir = 0;
   for(ir=0; ir< 900-16; ir++){ // call iir for each value of the signal!!! 
-    doIIR(constructedSignal,filteredOutput,ir);
+    doIIR(constructedSignal,filteredOutput,ir, bp_numerator, bp_denominator);
   }
   // Let's see if our signal has been low pass filtered!!! 
 
@@ -95,7 +99,7 @@ int main(){
   strcat(filename,time_str);
   strcat(filename,"iirFilteredData.data");  
 
- writeDataToFile("constructedSignal", constructedSignal, 900);
+ //writeDataToFile("constructedSignal", constructedSignal, 900);
 
  //ref https://stackoverflow.com/questions/308695/how-do-i-concatenate-const-literal-strings-in-c
   writeDataToFile(filename, filteredOutput, 900);
