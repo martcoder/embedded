@@ -35,14 +35,19 @@ void doIIR(float * signalValuesLast17, float * currentOutput, int outputIndex, f
    currentOutput[outputIndex] += numerator[c] * signalValuesLast17[c+outputIndex]; 
  }
  printf("Now about to start denominator\n"); 
+ int yIndex = 0;
  for(c=1; c < 17; c++){
    printf("Currentoutput is %f\n",currentOutput[outputIndex]);
-   printf("about to multiply %f with %f\n",denominator[c], yMinus[ (yMinusOldest + c-1) % 16 ]);
+   yIndex = yMinusOldest - c;
+   if( yIndex < 0 ){
+     yIndex += 16;
+   }
+   printf("about to multiply %f with %f\n",denominator[c], yMinus[ yIndex ]);
 
-   currentOutput[outputIndex] -= denominator[c] * yMinus[ (yMinusOldest + c-1) % 16 ]; // where yMinus[0] is y[n-1]
+   currentOutput[outputIndex] -= denominator[c] * yMinus[ yIndex ]; // where yMinus[0] is y[n-1]
    //yMinus[c-1] = 0.0f; // cheeky initialisation also using this loop
  }
- 
+
  printf("Final output for this round is %f\n",currentOutput[outputIndex]);
  // CIRCULAR BUFFER HOLDING yMinus values
  // Now update the previous y values, overwriting the oldest with latest
@@ -91,6 +96,7 @@ int main(){
      constructedSignal[c] -= avg;
    }
 
+   writeDataToFile("constructedSignal.data", constructedSignal, 900);
 
   // initialise yMinus to zeros
   for(c = 0; c < 16; c++){
