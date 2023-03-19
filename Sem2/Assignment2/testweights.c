@@ -7,6 +7,8 @@ float lp_denominator[17] = {1.0f, -5.3263f, 14.9989f, -28.3719f, 39.7005f, -43.0
 float lp_numerator[17] = { 0.0f, 0.0f, 0.0001f, 0.0003f, 0.0009f, 0.0022f, 0.0041f, 0.0059f, 0.0066f, 0.0059f, 0.0041f, 0.0022f, 0.0009f, 0.0003f, 0.0001f, 0.0f, 0.0f  };
 float bp_denominator[17] = {1.0f, -0.0005f, 2.6528f, -0.0012f, 3.9151f, -0.0016f, 3.6092f, -0.0012f, 2.2599f, -0.0006f, 0.9571f, -0.0002f, 0.2664f, -0.0f, 0.044f, 0.0f, 0.0033f};
 float bp_numerator[17] = {0.0007f, 0.0f, -0.005f, 0.0f, 0.0199f, 0.0f, -0.0397f, 0.0f, 0.0496f, 0.0f, -0.0397f, 0.0f, 0.0199f, 0.0f, -0.0057f, 0.0f, 0.0007f};
+float hp_numerator[17] = {0.0000, -0.0000, 0.0001, -0.0003, 0.0009, -0.0022, 0.0041, -0.0059, 0.0066, -0.0059, 0.0041, -0.0022, 0.0009, -0.0003, 0.0001, -0.0000, 0.0000};
+float hp_denominator[17] = {1.0000,  5.3257, 14.9962, 28.3650, 39.6887, 43.0774, 37.2438, 26.0200, 14.7832, 6.8298, 2.5502, 0.7598, 0.1767, 0.0310, 0.0038, 0.0003, 0.0000 };
 
 float yMinus[16]; //global
 float yMinus2[16]; //global
@@ -124,10 +126,15 @@ int main(){
     doIIR(constructedSignal,filteredOutput2,ir, bp_numerator, bp_denominator, yMinus2);
   }
 
+  for(ir= 0; ir < 880; ir++){
+    // highpass iir filtering
+    doIIR(constructedSignal,filteredOutput3,ir, hp_numerator, hp_denominator, yMinus3);
+  }
+
   // Combine low pass and bandpass filtered signal by adding together
   int combine;
   for(combine=0;combine<900;combine++){
-    filteredOutput[combine] = filteredOutput[combine] + filteredOutput2[combine];
+    filteredOutput[combine] = filteredOutput[combine] + filteredOutput2[combine] + filteredOutput3[combine];
   }
 
   char filename[1024];
