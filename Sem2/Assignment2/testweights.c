@@ -9,6 +9,8 @@ float bp_denominator[17] = {1.0f, -0.0005f, 2.6528f, -0.0012f, 3.9151f, -0.0016f
 float bp_numerator[17] = {0.0007f, 0.0f, -0.005f, 0.0f, 0.0199f, 0.0f, -0.0397f, 0.0f, 0.0496f, 0.0f, -0.0397f, 0.0f, 0.0199f, 0.0f, -0.0057f, 0.0f, 0.0007f};
 
 float yMinus[16]; //global
+float yMinus2[16]; //global
+float yMinus3[16];
 int yMinusOldest; // global pointer to oldest position in yMinus array
 float currentOutput;
 float * latestValueInSignal;
@@ -25,42 +27,42 @@ void writeDataToFile(char * filename, float * data, int lengthOfArray){
     fclose(fptr);
 }
 
-void doIIR(float * signalValuesLast17, float * currentOutput, int outputIndex, float * numerator, float * denominator){ //pass in last 16 values of signal
+void doIIR(float * signalValuesLast17, float * currentOutput, int outputIndex, float * numerator, float * denominator, float * yPrevious){ //pass in last 16 values of signal
 
  float result = 0.0f;
  int c = 0;
  for(c=0; c < 17; c++){ 
-   printf("Currentoutput is %f\n",currentOutput[outputIndex]);
-   printf("about to multiply %f with %f\n",numerator[c], signalValuesLast17[c+outputIndex]);
+   //printf("Currentoutput is %f\n",currentOutput[outputIndex]);
+   //printf("about to multiply %f with %f\n",numerator[c], signalValuesLast17[c+outputIndex]);
    currentOutput[outputIndex] += numerator[c] * signalValuesLast17[c+outputIndex]; 
  }
- printf("Now about to start denominator\n"); 
+ //printf("Now about to start denominator\n"); 
  int yIndex = 0;
  for(c=1; c < 17; c++){
-   printf("Currentoutput is %f\n",currentOutput[outputIndex]);
+   //printf("Currentoutput is %f\n",currentOutput[outputIndex]);
    yIndex = yMinusOldest - c;
    if( yIndex < 0 ){
      yIndex += 16;
    }
-   printf("about to multiply %f with %f\n",denominator[c], yMinus[ yIndex ]);
+   //printf("about to multiply %f with %f\n",denominator[c], yMinus[ yIndex ]);
 
-   currentOutput[outputIndex] -= denominator[c] * yMinus[ yIndex ]; // where yMinus[0] is y[n-1]
+   currentOutput[outputIndex] -= denominator[c] * yPrevious[ yIndex ]; // where yMinus[0] is y[n-1]
    //yMinus[c-1] = 0.0f; // cheeky initialisation also using this loop
  }
 
- printf("Final output for this round is %f\n",currentOutput[outputIndex]);
+ //printf("Final output for this round is %f\n",currentOutput[outputIndex]);
  // CIRCULAR BUFFER HOLDING yMinus values
  // Now update the previous y values, overwriting the oldest with latest
  // and update the index holding the oldest
- yMinus[yMinusOldest] = currentOutput[outputIndex]; 
+ yPrevious[yMinusOldest] = currentOutput[outputIndex]; 
  yMinusOldest++; 
  if( yMinusOldest > 15 ){//yMinus holds 16 elements
     //reset 
     yMinusOldest = 0;
  }
- for(c =0; c < 16; c++){
-   printf("yMinus at index %d is %f\n",c,yMinus[c]);
- }
+ //for(c =0; c < 16; c++){
+ //  printf("yMinus at index %d is %f\n",c,yMinus[c]);
+ //}
 
 }
 
@@ -70,6 +72,8 @@ int main(){
 
  //construct signal to have 900 elements
  float filteredOutput[900];
+ float filteredOutput2[900];
+ float filteredOutput3[900];
  float sig[9] = {1.0f, 5.0f, 4.0f, 1.0f, 6.0f, 7.0f, 8.0f, 3.0f, 4.0f};
  float constructedSignal[900];
  int i = 0;
@@ -89,6 +93,8 @@ int main(){
    for(c = 0; c < 900;c++){
      avg += constructedSignal[c];
      filteredOutput[c] = 0.0f; // also initialise output array elements to zero
+     filteredOutput2[c] = 0.0f;
+     filteredOutput3[c] = 0.0f;
    }
 
    avg = avg / 900.0;
@@ -101,15 +107,28 @@ int main(){
   // initialise yMinus to zeros
   for(c = 0; c < 16; c++){
     yMinus[c] = 0.0f;
+    yMinus2[c] = 0.0f;
+    yMinus3[c] = 0.0f;
   }
 
   //latestValueInSignal = &(sig[0]); 
   // let's do this!
   int ir = 0;
   for(ir=0; ir< 880; ir++){ // call iir for each value of the signal!!! 
-    doIIR(constructedSignal,filteredOutput,ir, lp_numerator, lp_denominator);
+    // lowpass iir filtering
+    doIIR(constructedSignal,filteredOutput,ir, lp_numerator, lp_denominator,yMinus);
   }
-  // Let's see if our signal has been low pass filtered!!! 
+
+  for(ir= 0; ir < 880; ir++){
+    // bandpass iir filtering
+    doIIR(constructedSignal,filteredOutput2,ir, bp_numerator, bp_denominator, yMinus2);
+  }
+
+  // Combine low pass and bandpass filtered signal by adding together
+  int combine;
+  for(combine=0;combine<900;combine++){
+    filteredOutput[combine] = filteredOutput[combine] + filteredOutput2[combine];
+  }
 
   char filename[1024];
   time_t mytime = time(NULL);
