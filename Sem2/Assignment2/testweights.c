@@ -121,10 +121,10 @@ int main(){
     doIIR(constructedSignal,filteredOutput,ir, lp_numerator, lp_denominator,yMinus);
   }
 
-  for(ir= 0; ir < 880; ir++){
+  /*for(ir= 0; ir < 880; ir++){
     // bandpass iir filtering
     doIIR(constructedSignal,filteredOutput2,ir, bp_numerator, bp_denominator, yMinus2);
-  }
+  }*/
 
   for(ir= 0; ir < 880; ir++){
     // highpass iir filtering
